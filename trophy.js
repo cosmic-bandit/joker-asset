@@ -1,11 +1,11 @@
 /*
- * Jokerbet — Header 3D Futbol Kupası
+ * Jokerbet — Header 3D Futbol Kupasi (v4 — responsive)
  * 3D model: "Football Trophy" by Ltomato (sketchfab.com/ltomato1477)
  * Lisans: CC-BY-4.0 — bu atif yorumu silinmemeli
  *
- * Davranis: Gizli SADECE dikey + dar ekranda (telefon, <700px).
- *           Yatay her ekran + dikey tablet/monitor (>=700px) -> gorunur.
- *           Yon/boyut degisimine canli tepki verir.
+ * Davranis: Her ekranda gorunur.
+ *           Dar ekranda (<700px) 44x44, genis ekranda 70x70.
+ *           Boyut degisimine canli tepki verir (sokup kurmadan).
  */
 
 (function () {
@@ -14,13 +14,9 @@
   var GLB_URL = "https://cdn.jsdelivr.net/gh/cosmic-bandit/joker-asset@main/world_cup_trophy-sml.glb";
   var V = "0.158.0";
   var WRAP_ID = "trophy-canvas-wrap";
-  var PORTRAIT_MIN_WIDTH = 700;
-
-  function shouldShow() {
-    var isPortrait = window.matchMedia("(orientation: portrait)").matches;
-    var isNarrow = window.innerWidth < PORTRAIT_MIN_WIDTH;
-    return !(isPortrait && isNarrow);
-  }
+  var BREAKPOINT = 700;
+  var SIZE_SMALL = 44;
+  var SIZE_LARGE = 70;
 
   function waitForLogo(maxMs) {
     return new Promise(function (resolve) {
@@ -41,13 +37,12 @@
   }
 
   function boot() {
-    if (!shouldShow()) return;
     if (alreadyMounted()) return;
     if (window.__jokerTrophyBooting) return;
     window.__jokerTrophyBooting = true;
 
     waitForLogo(15000).then(function (container) {
-      if (!container || alreadyMounted() || !shouldShow()) {
+      if (!container || alreadyMounted()) {
         window.__jokerTrophyBooting = false;
         return;
       }
@@ -62,24 +57,31 @@
         "  var WRAP_ID = '" + WRAP_ID + "';",
         "  var GLB_URL = '" + GLB_URL + "';",
         "  var V = '" + V + "';",
-        "  var PORTRAIT_MIN_WIDTH = " + PORTRAIT_MIN_WIDTH + ";",
+        "  var BREAKPOINT = " + BREAKPOINT + ";",
+        "  var SIZE_SMALL = " + SIZE_SMALL + ";",
+        "  var SIZE_LARGE = " + SIZE_LARGE + ";",
+        "",
+        "  function targetSize() {",
+        "    return window.innerWidth < BREAKPOINT ? SIZE_SMALL : SIZE_LARGE;",
+        "  }",
+        "",
         "  var container = document.querySelector('.logo-container');",
         "  var logo = container && container.querySelector('a.logo');",
         "  if (!container || !logo) { window.__jokerTrophyBooting = false; }",
         "  else if (document.getElementById(WRAP_ID)) { window.__jokerTrophyBooting = false; }",
         "  else {",
+        "    var SIZE = targetSize();",
         "    var wrap = document.createElement('div');",
         "    wrap.id = WRAP_ID;",
-        "    wrap.style.cssText = 'width:70px;height:70px;display:flex;align-items:center;flex:0 0 auto;pointer-events:none;';",
+        "    wrap.style.cssText = 'width:' + SIZE + 'px;height:' + SIZE + 'px;display:flex;align-items:center;flex:0 0 auto;pointer-events:none;';",
         "    logo.insertAdjacentElement('afterend', wrap);",
         "",
-        "    var W = 70, H = 70;",
         "    var scene = new THREE.Scene();",
-        "    var camera = new THREE.PerspectiveCamera(35, W/H, 0.1, 100);",
+        "    var camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);",
         "    camera.position.set(0, 0, 5);",
         "",
         "    var renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });",
-        "    renderer.setSize(W, H);",
+        "    renderer.setSize(SIZE, SIZE);",
         "    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));",
         "    renderer.outputColorSpace = THREE.SRGBColorSpace;",
         "    renderer.toneMapping = THREE.ACESFilmicToneMapping;",
@@ -119,13 +121,18 @@
         "",
         "        var clock = new THREE.Clock();",
         "        (function animate(){",
-        "          var portraitNarrow = window.matchMedia('(orientation: portrait)').matches && window.innerWidth < PORTRAIT_MIN_WIDTH;",
-        "          if (!document.body.contains(wrap) || portraitNarrow) {",
+        "          if (!document.body.contains(wrap)) {",
         "            if (raf) cancelAnimationFrame(raf);",
-        "            if (document.body.contains(wrap)) wrap.remove();",
         "            renderer.dispose();",
         "            window.__jokerTrophyBooting = false;",
         "            return;",
+        "          }",
+        "          var want = targetSize();",
+        "          if (want !== SIZE) {",
+        "            SIZE = want;",
+        "            wrap.style.width = SIZE + 'px';",
+        "            wrap.style.height = SIZE + 'px';",
+        "            renderer.setSize(SIZE, SIZE);",
         "          }",
         "          raf = requestAnimationFrame(animate);",
         "          var dt = clock.getDelta();",
@@ -149,7 +156,7 @@
   function recheck() {
     clearTimeout(recheckTimer);
     recheckTimer = setTimeout(function () {
-      if (shouldShow() && !alreadyMounted()) boot();
+      if (!alreadyMounted()) boot();
     }, 200);
   }
   window.addEventListener("resize", recheck);
